@@ -17,6 +17,7 @@ def parse_args():
                         help='recio directory for validation.')
     parser.add_argument('--batch-size', type=int, default=32,
                         help='training batch size per device (CPU/GPU).')
+    parser.add_argument('--num-inference-batches', type=int, required=True, help='number of images used for inference')
     parser.add_argument('--num-gpus', type=int, default=0,
                         help='number of gpus to use.')
     parser.add_argument('-j', '--num-data-workers', dest='num_workers', default=4, type=int,
@@ -31,6 +32,8 @@ def parse_args():
                         help='local parameter file to load, instead of pre-trained weight.')
     parser.add_argument('--dtype', type=str,
                         help='training data type')
+    parser.add_argument('--load-symbol', action='store_true',
+                        help='load JSON file as SymbolBlock.')
     parser.add_argument('--use_se', action='store_true',
                         help='use SE layers or not in resnext. default is false.')
     opt = parser.parse_args()
@@ -56,10 +59,16 @@ if __name__ == '__main__':
     if model_name.startswith('resnext'):
         kwargs['use_se'] = opt.use_se
 
-    net = get_model(model_name, **kwargs)
-    net.cast(opt.dtype)
-    if opt.params_file:
-        net.load_parameters(opt.params_file, ctx=ctx)
+    if opt.load_symbol == True:
+        print('Load back from JSON with SymbolBlock')
+        net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(model_name),
+            ['data'], '{}-0000.params'.format(model_name), fusion=opt.fusion)
+        net.collect_params().reset_ctx(ctx = ctx)
+    else:
+        net = get_model(model_name, **kwargs)
+        net.cast(opt.dtype)
+        if opt.params_file:
+            net.load_parameters(opt.params_file, ctx=ctx)
     net.hybridize()
 
     acc_top1 = mx.metric.Accuracy()
@@ -86,6 +95,8 @@ if __name__ == '__main__':
         acc_top5.reset()
         if not opt.rec_dir:
             num_batch = len(val_data)
+        num = 0
+        max_num_examples = batch_size * opt.num_inference_batches
         for i, batch in enumerate(val_data):
             if mode == 'image':
                 data = gluon.utils.split_and_load(batch[0], ctx_list=ctx, batch_axis=0)
@@ -103,6 +114,10 @@ if __name__ == '__main__':
                 print('%d / %d : %.8f, %.8f'%(i, num_batch, 1-top1, 1-top5))
             else:
                 print('%d : %.8f, %.8f'%(i, 1-top1, 1-top5))
+
+            num += batch_size
+            if max_num_examples is not None and num >= max_num_examples:
+                break
 
         _, top1 = acc_top1.get()
         _, top5 = acc_top5.get()
