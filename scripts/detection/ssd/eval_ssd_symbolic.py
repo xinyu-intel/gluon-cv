@@ -19,11 +19,11 @@ from gluoncv.utils.metrics.coco_detection import COCODetectionMetric
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Eval SSD networks.')
-    parser.add_argument('--network', type=str, default='vgg16_atrous',
-                        help="Base network name")
+    parser.add_argument('--model-prefix', type=str, default='ssd_300_vgg16_atrous_voc',
+                        help='Prefix of converted model.')
     parser.add_argument('--data-shape', type=int, default=300,
                         help="Input data shape")
-    parser.add_argument('--batch-size', type=int, default=64,
+    parser.add_argument('--batch-size', type=int, default=224,
                         help='Training mini-batch size')
     parser.add_argument('--dataset', type=str, default='voc',
                         help='Training dataset.')
@@ -31,12 +31,6 @@ def parse_args():
                         default=2, help='Number of data workers')
     parser.add_argument('--gpus', type=str, default='',
                         help='Training with GPUs, you can specify 1,3 for example.')
-    parser.add_argument('--pretrained', type=str, default='True',
-                        help='Load weights from previously saved parameters.')
-    parser.add_argument('--load-symbol', action='store_true',
-                        help='load JSON file as SymbolBlock.')
-    parser.add_argument('--quantized', action='store_true',
-                        help='load quantized symbol.')
     parser.add_argument('--save-prefix', type=str, default='',
                         help='Saving parameter prefix')
     args = parser.parse_args()
@@ -66,11 +60,10 @@ def get_dataloader(val_dataset, data_shape, batch_size, num_workers):
 
 def validate(net, val_data, ctx, classes, size, metric):
     """Test on validation dataset."""
-    net.collect_params().reset_ctx(ctx)
+    # net.collect_params().reset_ctx(ctx)
     metric.reset()
-    if args.load_symbol != True:
-        net.set_nms(nms_thresh=0.45, nms_topk=200)
-    net.hybridize()
+    # net.set_nms(nms_thresh=0.45, nms_topk=400)
+    # net.hybridize()
     with tqdm(total=size) as pbar:
         start = time.time()
         for ib, batch in enumerate(val_data):
@@ -83,7 +76,9 @@ def validate(net, val_data, ctx, classes, size, metric):
             gt_ids = []
             gt_difficults = []
             for x, y in zip(data, label):
-                ids, scores, bboxes = net(x)
+                # ids, scores, bboxes = net(x)
+                net.forward(mx.io.DataBatch([x]))
+                ids, scores, bboxes = net.get_outputs()
                 det_ids.append(ids)
                 det_scores.append(scores)
                 # clip to image size
@@ -101,27 +96,24 @@ def validate(net, val_data, ctx, classes, size, metric):
     return metric.get()
 
 if __name__ == '__main__':
+
+
+    CHANNEL_COUNT = 3
+
     args = parse_args()
 
     # training contexts
     ctx = [mx.gpu(int(i)) for i in args.gpus.split(',') if i.strip()]
     ctx = ctx if ctx else [mx.cpu()]
 
-    # network
-    net_name = '_'.join(('ssd', str(args.data_shape), args.network, args.dataset))
-    if args.load_symbol == True:
-        if args.quantized == True:
-            net_name = '-'.join((str(net_name), 'quantized'))
-        print('Load back from JSON with SymbolBlock')
-        net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(net_name),
-            ['data'], '{}-0000.params'.format(net_name))
-    else:
-        args.save_prefix += net_name
-        if args.pretrained.lower() in ['true', '1', 'yes', 't']:
-            net = gcv.model_zoo.get_model(net_name, pretrained=True)
-        else:
-            net = gcv.model_zoo.get_model(net_name, pretrained=False)
-            net.load_parameters(args.pretrained.strip())
+    sym, arg_params, aux_params = mx.model.load_checkpoint(args.model_prefix, 0)
+    # graph = mx.viz.plot_network(sym)
+    # graph.format = 'png'
+    # graph.render("quantized")
+    net = mx.mod.Module(sym, label_names=[], context=ctx)
+    data_shape = [args.batch_size, CHANNEL_COUNT, args.data_shape, args.data_shape]
+    net.bind(data_shapes=[("data", data_shape)], inputs_need_grad=False, for_training=False)
+    net.set_params(arg_params=arg_params, aux_params=aux_params)
 
     # training data
     val_dataset, val_metric = get_dataset(args.dataset, args.data_shape)
