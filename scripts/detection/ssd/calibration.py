@@ -28,7 +28,7 @@ from gluoncv.data.batchify import Tuple, Stack, Pad
 from gluoncv.data.transforms.presets.ssd import SSDDefaultValTransform
 from gluoncv.utils.metrics.voc_detection import VOC07MApMetric
 from gluoncv.utils.metrics.coco_detection import COCODetectionMetric
-from quantization import *
+from gluoncv.utils.quantization import *
 from mxnet.base import SymbolHandle, check_call, _LIB, mx_uint, c_str_array
 import ctypes
 
@@ -160,6 +160,8 @@ if __name__ == '__main__':
                             'ssd0_concat22',
                             'ssd0_concat23']
 
+    if args.model_prefix == 'ssd_512_vgg16_atrous_voc':
+        excluded_sym_names += ['ssd0_flatten12', 'ssd0_flatten13']
 
     if calib_mode == 'none':
         raise ValueError('Not Support')
