@@ -17,7 +17,7 @@ def parse_args():
                         help='recio directory for validation.')
     parser.add_argument('--batch-size', type=int, default=32,
                         help='training batch size per device (CPU/GPU).')
-    parser.add_argument('--num-inference-batches', type=int, required=True, help='number of images used for inference')
+    parser.add_argument('--num-inference-batches', type=int, default=0, required=True, help='number of images used for inference')
     parser.add_argument('--num-gpus', type=int, default=0,
                         help='number of gpus to use.')
     parser.add_argument('-j', '--num-data-workers', dest='num_workers', default=4, type=int,
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     if opt.load_symbol == True:
         print('Load back from JSON with SymbolBlock')
         net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(model_name),
-            ['data'], '{}-0000.params'.format(model_name), fusion=opt.fusion)
+            ['data'], '{}-0000.params'.format(model_name))
         net.collect_params().reset_ctx(ctx = ctx)
     else:
         net = get_model(model_name, **kwargs)
