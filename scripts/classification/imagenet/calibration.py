@@ -102,6 +102,15 @@ if __name__ == '__main__':
     calib_layer = lambda name: name.endswith('_output')
     excluded_sym_names = []
 
+    if args.model_prefix == 'mobilenet1.0':
+        excluded_sym_names += ['mobilenet0_flatten0_flatten0',
+                               'mobilenet0_dense0_fwd',
+                               'mobilenet0_pool0_fwd']
+    elif args.model_prefix == 'resnet50_v1':
+        excluded_sym_names += ['resnetv10_dense0_fwd']
+    elif args.model_prefix == 'squeezenet1.0':
+        excluded_sym_names += ['squeezenet0_flatten0_flatten0']   
+
     if calib_mode == 'none':
         raise ValueError('Not Support')
     else:
