@@ -1,14 +1,17 @@
-"""SSD Demo script."""
+"""Classification Demo script."""
 import os
 import argparse
+import time
 import mxnet as mx
 import gluoncv as gcv
 from gluoncv.data.transforms import presets
+from mxnet.gluon.data.vision import transforms
+from gluoncv.data.transforms.presets.imagenet import transform_eval
 from matplotlib import pyplot as plt
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Test with SSD networks.')
-    parser.add_argument('--network', type=str, default='ssd_300_vgg16_atrous_voc',
+    parser.add_argument('--network', type=str, default='resnet50_v1',
                         help="Base network name")
     parser.add_argument('--images', type=str, default='',
                         help='Test images, use comma to split multiple.')
@@ -38,25 +41,28 @@ if __name__ == '__main__':
     else:
         net = gcv.model_zoo.get_model(args.network, pretrained=False, pretrained_base=False)
         net.load_parameters(args.pretrained)
-    net.set_nms(0.45, 200)
-
 
     # export to json and load back with SymbolBlock
-    class_names = net.classes
     print('Export to JSON...')
     gcv.utils.export_block(args.network, net, preprocess=False, layout='CHW')
     print('Load back from JSON with SymbolBlock')
-    net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(args.network),
-        ['data'], '{}-0000.params'.format(args.network))
+    net_import = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(args.network),
+        ['data'], '{}-0000.params'.format(args.network), fusion=True)
 
-    net.collect_params().reset_ctx(ctx = ctx)
+    net_import.collect_params().reset_ctx(ctx = ctx)
 
-    ax = None
     for image in image_list:
-        x, img = presets.ssd.load_test(image, short=512)
-        x = x.as_in_context(ctx[0])
-        ids, scores, bboxes = [xx[0].asnumpy() for xx in net(x)]
-        # ax = gcv.utils.viz.plot_bbox(img, bboxes, scores, ids,
-        #                           class_names=class_names, ax=ax)
-        # plt.show()
-        # plt.savefig("01.png")
+        img = mx.image.imread(image)
+        img = transform_eval(img)
+        start = time.time()
+        for i in range(5000):
+            pred = net_import(img)
+        end = time.time()
+        speed = (end - start) / 5000
+        print('latency is %f ms.'% (1000 * speed))
+        # topK = 5
+        # ind = mx.nd.topk(pred, k=topK)[0].astype('int')
+        # print('The input picture is classified to be')
+        # for i in range(topK):
+        #     print('\t[%s], with probability %.3f.'%
+        #         (net.classes[ind[i].asscalar()], mx.nd.softmax(pred)[0][ind[i]].asscalar()))
