@@ -1,4 +1,4 @@
-import argparse, os, math
+import argparse, os, math, time
 
 import mxnet as mx
 from mxnet import gluon, nd, image
@@ -97,6 +97,7 @@ if __name__ == '__main__':
             num_batch = len(val_data)
         num = 0
         max_num_examples = batch_size * opt.num_inference_batches
+        start = time.time()
         for i, batch in enumerate(val_data):
             if mode == 'image':
                 data = gluon.utils.split_and_load(batch[0], ctx_list=ctx, batch_axis=0)
@@ -118,6 +119,9 @@ if __name__ == '__main__':
             num += batch_size
             if max_num_examples is not None and num >= max_num_examples:
                 break
+        end = time.time()
+        speed = num / (end - start)
+        print('Throughput is %f img/sec.'% speed)
 
         _, top1 = acc_top1.get()
         _, top5 = acc_top5.get()
@@ -133,7 +137,7 @@ if __name__ == '__main__':
         val_data = mx.io.ImageRecordIter(
             path_imgrec         = imgrec,
             path_imgidx         = imgidx,
-            preprocess_threads  = 30,
+            preprocess_threads  = num_workers,
             batch_size          = batch_size,
 
             resize              = resize,
@@ -152,12 +156,12 @@ if __name__ == '__main__':
         err_top1_val, err_top5_val = test(ctx, val_data, 'rec')
     print(err_top1_val, err_top5_val)
 
-    params_count = 0
-    kwargs2 = {'ctx': mx.cpu(), 'pretrained': False, 'classes': classes}
-    net2 = get_model(model_name, **kwargs2)
-    net2.initialize()
-    p = net2(mx.nd.zeros((1, 3, input_size, input_size)))
-    for k, v in net2.collect_params().items():
-        params_count += v.data().size
+    # params_count = 0
+    # kwargs2 = {'ctx': mx.cpu(), 'pretrained': False, 'classes': classes}
+    # net2 = get_model(model_name, **kwargs2)
+    # net2.initialize()
+    # p = net2(mx.nd.zeros((1, 3, input_size, input_size)))
+    # for k, v in net2.collect_params().items():
+    #     params_count += v.data().size
 
-    print(params_count)
+    # print(params_count)
