@@ -54,8 +54,6 @@ if __name__ == '__main__':
                         help="Input data shape")
     parser.add_argument('--crop-ratio', type=float, default=0.875,
                         help='The ratio for crop and input size, for validation dataset only')
-    parser.add_argument('--dataset', type=str, default='voc',
-                        help='Training dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
                         default=4, help='Number of data workers')
     parser.add_argument('--calib-mode', type=str, default='naive',
