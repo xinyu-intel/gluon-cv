@@ -115,13 +115,13 @@ if __name__ == '__main__':
     net.bind(data_shapes=[("data", data_shape)], inputs_need_grad=False, for_training=False)
     net.set_params(arg_params=arg_params, aux_params=aux_params)
 
-    # training data
+    # val data
     val_dataset, val_metric = get_dataset(args.dataset, args.data_shape)
     val_data = get_dataloader(
         val_dataset, args.data_shape, args.batch_size, args.num_workers)
     classes = val_dataset.classes  # class names
 
-    # training
+    # cal
     names, values = validate(net, val_data, ctx, classes, len(val_dataset), val_metric)
     for k, v in zip(names, values):
         print(k, v)

@@ -17,13 +17,14 @@ def parse_args():
                         help='recio directory for validation.')
     parser.add_argument('--batch-size', type=int, default=32,
                         help='training batch size per device (CPU/GPU).')
-    parser.add_argument('--num-inference-batches', type=int, default=0, required=True, help='number of images used for inference')
     parser.add_argument('--num-gpus', type=int, default=0,
                         help='number of gpus to use.')
     parser.add_argument('-j', '--num-data-workers', dest='num_workers', default=4, type=int,
                         help='number of preprocessing workers')
     parser.add_argument('--model', type=str, required=True,
                         help='type of model to use. see vision_model for options.')
+    parser.add_argument('--quantized', action='store_true',
+                        help='use int8 pretrained model')
     parser.add_argument('--input-size', type=int, default=224,
                         help='input shape of the image, default is 224.')
     parser.add_argument('--crop-ratio', type=float, default=0.875,
@@ -53,6 +54,8 @@ if __name__ == '__main__':
 
     input_size = opt.input_size
     model_name = opt.model
+    if opt.quantized:
+        model_name = '_'.join((model_name, 'int8'))
     pretrained = True if not opt.params_file else False
 
     kwargs = {'ctx': ctx, 'pretrained': pretrained, 'classes': classes}
@@ -96,7 +99,6 @@ if __name__ == '__main__':
         if not opt.rec_dir:
             num_batch = len(val_data)
         num = 0
-        max_num_examples = batch_size * opt.num_inference_batches
         start = time.time()
         for i, batch in enumerate(val_data):
             if mode == 'image':
@@ -115,10 +117,7 @@ if __name__ == '__main__':
                 print('%d / %d : %.8f, %.8f'%(i, num_batch, 1-top1, 1-top5))
             else:
                 print('%d : %.8f, %.8f'%(i, 1-top1, 1-top5))
-
             num += batch_size
-            if max_num_examples is not None and num >= max_num_examples:
-                break
         end = time.time()
         speed = num / (end - start)
         print('Throughput is %f img/sec.'% speed)
@@ -155,13 +154,3 @@ if __name__ == '__main__':
     else:
         err_top1_val, err_top5_val = test(ctx, val_data, 'rec')
     print(err_top1_val, err_top5_val)
-
-    # params_count = 0
-    # kwargs2 = {'ctx': mx.cpu(), 'pretrained': False, 'classes': classes}
-    # net2 = get_model(model_name, **kwargs2)
-    # net2.initialize()
-    # p = net2(mx.nd.zeros((1, 3, input_size, input_size)))
-    # for k, v in net2.collect_params().items():
-    #     params_count += v.data().size
-
-    # print(params_count)

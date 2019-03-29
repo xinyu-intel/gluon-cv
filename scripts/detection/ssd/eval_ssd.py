@@ -21,16 +21,18 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Eval SSD networks.')
     parser.add_argument('--network', type=str, default='vgg16_atrous',
                         help="Base network name")
+    parser.add_argument('--quantized', action='store_true',
+                        help='use int8 pretrained model')
     parser.add_argument('--data-shape', type=int, default=300,
                         help="Input data shape")
     parser.add_argument('--batch-size', type=int, default=64,
-                        help='Training mini-batch size')
+                        help='eval mini-batch size')
     parser.add_argument('--dataset', type=str, default='voc',
-                        help='Training dataset.')
+                        help='eval dataset.')
     parser.add_argument('--num-workers', '-j', dest='num_workers', type=int,
-                        default=2, help='Number of data workers')
-    parser.add_argument('--gpus', type=str, default='',
-                        help='Training with GPUs, you can specify 1,3 for example.')
+                        default=4, help='Number of data workers')
+    parser.add_argument('--num-gpus', type=int, default=0,
+                        help='number of gpus to use.')
     parser.add_argument('--pretrained', type=str, default='True',
                         help='Load weights from previously saved parameters.')
     parser.add_argument('--load-symbol', action='store_true',
@@ -68,8 +70,8 @@ def validate(net, val_data, ctx, classes, size, metric):
     """Test on validation dataset."""
     net.collect_params().reset_ctx(ctx)
     metric.reset()
-    if args.load_symbol != True:
-        net.set_nms(nms_thresh=0.45, nms_topk=200)
+    if not args.quantized:
+        net.set_nms(nms_thresh=0.45, nms_topk=400)
     net.hybridize()
     with tqdm(total=size) as pbar:
         start = time.time()
@@ -103,18 +105,19 @@ def validate(net, val_data, ctx, classes, size, metric):
 if __name__ == '__main__':
     args = parse_args()
 
-    # training contexts
-    ctx = [mx.gpu(int(i)) for i in args.gpus.split(',') if i.strip()]
-    ctx = ctx if ctx else [mx.cpu()]
+    # eval contexts
+    num_gpus = args.num_gpus
+    if num_gpus > 0:
+        args.batch_size *= num_gpus
+    ctx = [mx.gpu(i) for i in range(num_gpus)] if num_gpus > 0 else [mx.cpu()]
 
     # network
     net_name = '_'.join(('ssd', str(args.data_shape), args.network, args.dataset))
-    if args.load_symbol == True:
-        if args.quantized == True:
-            net_name = '-'.join((str(net_name), 'quantized'))
-        print('Load back from JSON with SymbolBlock')
-        net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(net_name),
-            ['data'], '{}-0000.params'.format(net_name))
+    if args.quantized:
+        net_name = '_'.join((net_name, 'int8'))
+    args.save_prefix += net_name
+    if args.pretrained.lower() in ['true', '1', 'yes', 't']:
+        net = gcv.model_zoo.get_model(net_name, pretrained=True)
     else:
         args.save_prefix += net_name
         if args.pretrained.lower() in ['true', '1', 'yes', 't']:
@@ -123,13 +126,13 @@ if __name__ == '__main__':
             net = gcv.model_zoo.get_model(net_name, pretrained=False)
             net.load_parameters(args.pretrained.strip())
 
-    # training data
+    # eval data
     val_dataset, val_metric = get_dataset(args.dataset, args.data_shape)
     val_data = get_dataloader(
         val_dataset, args.data_shape, args.batch_size, args.num_workers)
     classes = val_dataset.classes  # class names
 
-    # training
+    # eval
     names, values = validate(net, val_data, ctx, classes, len(val_dataset), val_metric)
     for k, v in zip(names, values):
         print(k, v)

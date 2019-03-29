@@ -12,9 +12,9 @@
 
 ### Prepare dataset
 
-- Reference this [page](https://gluon-cv.mxnet.io/build/examples_datasets/pascal_voc.html#sphx-glr-build-examples-datasets-pascal-voc-py) for making VOC dataset, note that only need infernece dataset.
+- Reference this [page](https://gluon-cv.mxnet.io/build/examples_datasets/pascal_voc.html#sphx-glr-build-examples-datasets-pascal-voc-py) for making VOC dataset, note that only need inference dataset.
 
-- Reference this [page](https://gluon-cv.mxnet.io/build/examples_datasets/mscoco.html#sphx-glr-build-examples-datasets-mscoco-py) for making COCO2017 dataset, note that only need infernece dataset and data files are already downloaded in /lustre/dataset/COCO2017
+- Reference this [page](https://gluon-cv.mxnet.io/build/examples_datasets/mscoco.html#sphx-glr-build-examples-datasets-mscoco-py) for making COCO2017 dataset, note that only need inference dataset and data files are already downloaded in /lustre/dataset/COCO2017
 
 ### Export models
 ```
@@ -43,10 +43,10 @@ export KMP_AFFINITY=granularity=fine,noduplicates,compact,1,0
 export OMP_NUM_THREADS=26
 
 # float32
-numactl --physcpubind=0-27 --membind=0 python eval_ssd.py --network=vgg16_atrous --data-shape=300 --batch-size=224 --load-symbol
+numactl --physcpubind=0-27 --membind=0 python eval_ssd_symbolic.py --model-prefix=ssd_300_vgg16_atrous_voc --data-shape=300 --batch-size=224
 
 # int8
-numactl --physcpubind=0-27 --membind=0 python eval_ssd.py --network=vgg16_atrous --data-shape=300 --batch-size=224 --load-symbol --quantized
+numactl --physcpubind=0-27 --membind=0 python eval_ssd_symbolic.py --model-prefix=ssd_300_vgg16_atrous_voc-quantized --data-shape=300 --batch-size=224
 ```
 
 Tips:

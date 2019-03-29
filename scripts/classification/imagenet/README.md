@@ -17,7 +17,7 @@ Tips:
 
 ### Calibration
 ```
-python calibration.py --model-prefix=resnet50_v1 --data-dir=/lustre/dataset/mxnet/imagenet --data-shape=224 --calib-mode=naive
+python calibration.py --model-prefix=resnet50_v1 --data-dir=/lustre/dataset/imagenet/img/ --data-shape=224 --calib-mode=naive
 ```
 Tips:
 
@@ -32,10 +32,10 @@ export KMP_AFFINITY=granularity=fine,noduplicates,compact,1,0
 export OMP_NUM_THREADS=18
 
 # float32
-numactl --physcpubind=0-27 --membind=0 python verify_pretrained.py --model=resnet50_v1 --num-inference-batches=100 --batch-size=128 --load-symbol --num-data-workers=10 --rec-dir=/lustre/dataset/mxnet/imagenet/
+numactl --physcpubind=0-27 --membind=0 python verify_pretrained_symbolic.py --model-prefix=resnet50_v1 --batch-size=128 --num-data-workers=10 --rec-dir=/lustre/dataset/mxnet/imagenet/
 
 # int8
-numactl --physcpubind=0-27 --membind=0 python verify_pretrained.py --model=resnet50_v1-quantized --num-inference-batches=100 --batch-size=128 --load-symbol --num-data-workers=10 --rec-dir=/lustre/dataset/mxnet/imagenet/
+numactl --physcpubind=0-27 --membind=0 python verify_pretrained_symbolic.py --model-prefix=resnet50_v1-quantized --batch-size=128 --num-data-workers=10 --rec-dir=/lustre/dataset/mxnet/imagenet/
 ```
 
 Tips:

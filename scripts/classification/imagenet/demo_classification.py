@@ -47,22 +47,11 @@ if __name__ == '__main__':
     gcv.utils.export_block(args.network, net, preprocess=False, layout='CHW')
     print('Load back from JSON with SymbolBlock')
     net_import = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(args.network),
-        ['data'], '{}-0000.params'.format(args.network), fusion=True)
+        ['data'], '{}-0000.params'.format(args.network))
 
     net_import.collect_params().reset_ctx(ctx = ctx)
 
     for image in image_list:
         img = mx.image.imread(image)
         img = transform_eval(img)
-        start = time.time()
-        for i in range(5000):
-            pred = net_import(img)
-        end = time.time()
-        speed = (end - start) / 5000
-        print('latency is %f ms.'% (1000 * speed))
-        # topK = 5
-        # ind = mx.nd.topk(pred, k=topK)[0].astype('int')
-        # print('The input picture is classified to be')
-        # for i in range(topK):
-        #     print('\t[%s], with probability %.3f.'%
-        #         (net.classes[ind[i].asscalar()], mx.nd.softmax(pred)[0][ind[i]].asscalar()))
+        pred = net_import(img)

@@ -1,4 +1,4 @@
-"""6. Train Faster-RCNN end-to-end on PASCAL VOC
+"""06. Train Faster-RCNN end-to-end on PASCAL VOC
 ================================================
 
 This tutorial goes through the basic steps of training a Faster-RCNN [Ren15]_ object detection model
@@ -164,7 +164,7 @@ for ib, batch in enumerate(train_loader):
 #
 # .. hint::
 #
-#    To avoid downloading mdoel in this tutorial, we set ``pretrained_base=False``,
+#    To avoid downloading model in this tutorial, we set ``pretrained_base=False``,
 #    in practice we usually want to load pre-trained imagenet models by setting
 #    ``pretrained_base=True``.
 from gluoncv import model_zoo
