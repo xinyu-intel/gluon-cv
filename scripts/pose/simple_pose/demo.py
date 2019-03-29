@@ -21,6 +21,10 @@ parser.add_argument('--pose-model', type=str, default='simple_pose_resnet50_v1b'
                     help='name of the pose estimation model to use')
 parser.add_argument('--input-pic', type=str, required=True,
                     help='path to the input picture')
+parser.add_argument('--block', type=bool, default=False,
+                    help='inport static graph')
+parser.add_argument('--export', type=bool, default=False,
+                    help='export to static graph')
 opt = parser.parse_args()
 
 def keypoint_detection(img_path, detector, pose_net):
@@ -33,11 +37,22 @@ def keypoint_detection(img_path, detector, pose_net):
 
     ax = plot_keypoints(img, pred_coords, confidence, class_IDs, bounding_boxs, scores,
                         box_thresh=0.5, keypoint_thresh=0.2)
-    plt.show()
+    plt.savefig('result.png')
 
 if __name__ == '__main__':
     detector = get_model(opt.detector, pretrained=True)
     detector.reset_class(["person"], reuse_weights=['person'])
-    net = get_model(opt.pose_model, pretrained=True)
+    if opt.block == True:
+        net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(opt.pose_model),
+            ['data'], '{}-0000.params'.format(opt.pose_model))
+    else:
+        net = get_model(opt.pose_model, pretrained=True)
+
+    if opt.export == True:
+        print('Export to JSON...')
+        gcv.utils.export_block(opt.pose_model, net, preprocess=False, layout='CHW')
+        print('Load back from JSON with SymbolBlock')
+        net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(opt.pose_model),
+            ['data'], '{}-0000.params'.format(opt.pose_model))
 
     keypoint_detection(opt.input_pic, detector, net)
