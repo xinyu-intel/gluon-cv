@@ -31,6 +31,8 @@ Tips:
 export KMP_AFFINITY=granularity=fine,noduplicates,compact,1,0
 export OMP_NUM_THREADS=18
 
+export MXNET_SUBGRAPH_BACKEND=MKLDNN
+
 # float32
 numactl --physcpubind=0-27 --membind=0 python verify_pretrained_symbolic.py --model-prefix=resnet50_v1 --batch-size=128 --num-data-workers=10 --rec-dir=/lustre/dataset/mxnet/imagenet/
 

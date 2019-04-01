@@ -42,6 +42,8 @@ Tips:
 export KMP_AFFINITY=granularity=fine,noduplicates,compact,1,0
 export OMP_NUM_THREADS=26
 
+export MXNET_SUBGRAPH_BACKEND=MKLDNN
+
 # float32
 numactl --physcpubind=0-27 --membind=0 python eval_ssd_symbolic.py --model-prefix=ssd_300_vgg16_atrous_voc --data-shape=300 --batch-size=224
 
