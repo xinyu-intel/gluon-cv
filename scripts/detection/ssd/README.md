@@ -54,4 +54,4 @@ numactl --physcpubind=0-27 --membind=0 python eval_ssd_symbolic.py --model-prefi
 Tips:
 
 - try different batch size for performance
-- try different combines of OMP_NUM_THREADS and --num-data-workers, the sum of them should be the number of physical cores of a single socket
+- try different combines of OMP_NUM_THREADS and --num-workers, the sum of them should be the number of physical cores of a single socket

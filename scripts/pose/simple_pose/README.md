@@ -6,7 +6,7 @@
 
 ## Export Models
 ```
-python demo.py --export=True --input-pic=./soccer.png --pose-model=simple_pose_resnet50_v1b
+python demo.py --export=True  --pose-model=simple_pose_resnet50_v1b
 ```
 ## Calibration
 ```

@@ -19,7 +19,7 @@ parser.add_argument('--detector', type=str, default='yolo3_mobilenet1.0_coco',
                     help='name of the detection model to use')
 parser.add_argument('--pose-model', type=str, default='simple_pose_resnet50_v1b',
                     help='name of the pose estimation model to use')
-parser.add_argument('--input-pic', type=str, required=True,
+parser.add_argument('--input-pic', type=str, required=False,
                     help='path to the input picture')
 parser.add_argument('--block', type=bool, default=False,
                     help='inport static graph')
@@ -55,4 +55,4 @@ if __name__ == '__main__':
         net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(opt.pose_model),
             ['data'], '{}-0000.params'.format(opt.pose_model))
 
-    keypoint_detection(opt.input_pic, detector, net)
+    # keypoint_detection(opt.input_pic, detector, net)

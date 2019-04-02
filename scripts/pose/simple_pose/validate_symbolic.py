@@ -176,6 +176,7 @@ def validate(val_data, val_dataset, net, ctx):
     val_metric.reset()
 
     from tqdm import tqdm
+    size = 0
     start = time.time()
     for batch in tqdm(val_data):
         data, scale, center, score, imgid = val_batch_fn(batch, ctx)
@@ -196,6 +197,7 @@ def validate(val_data, val_dataset, net, ctx):
 
         preds, maxvals = get_final_preds(outputs_stack, center.asnumpy(), scale.asnumpy())
         val_metric.update(preds, maxvals, score, imgid)
+        size += batch_size
     end = time.time()
     speed = size / (end - start)
     print('Throughput is %f img/sec.'% speed)
